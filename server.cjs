@@ -36,6 +36,14 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+
+// Add root GET endpoint for Cron-Job.org pings
+app.get('/', (req, res) => {
+  res.status(200).send('Server is running');
+});
+
+
+
 // Send push notification
 async function sendPushNotification(subscription, payload) {
   try {
