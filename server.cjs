@@ -21,7 +21,6 @@
 //   universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN,
 // };
 
-// // Initialize Firebase Admin SDK
 // if (!admin.apps.length) {
 //   admin.initializeApp({
 //     credential: admin.credential.cert(serviceAccount),
@@ -30,12 +29,10 @@
 
 // const db = admin.firestore();
 
-// // Add root GET endpoint for Cron-Job.org pings
 // app.get('/', (req, res) => {
 //   res.status(200).send('Server is running');
 // });
 
-// // Send FCM notification with retry logic
 // async function sendPushNotification(token, payload, retries = 3) {
 //   for (let attempt = 1; attempt <= retries; attempt++) {
 //     try {
@@ -66,13 +63,11 @@
 //   return false;
 // }
 
-// // Check and send notifications
 // async function checkAndSendNotifications() {
 //   const now = Date.now();
 //   console.log(`Checking for tasks to notify at ${new Date(now).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}...`);
 
 //   try {
-//     // Query tasks with alerts enabled and not yet notified
 //     const tasksSnapshot = await db
 //       .collection('tasks')
 //       .where('alert', '==', true)
@@ -93,14 +88,12 @@
 //       const alertMinutes = task.alertMinutes || 0;
 //       const alertTime = taskTime - alertMinutes * 60 * 1000;
 
-//       // Log task details for debugging
 //       console.log(`Evaluating task "${task.title}" (ID: ${taskId})`);
 //       console.log(`  Task Time: ${new Date(taskTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
 //       console.log(`  Alert Time: ${new Date(alertTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
 //       console.log(`  Current Time: ${new Date(now).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
 //       console.log(`  Time Difference (ms): ${now - alertTime}`);
 
-//       // Check if current time is within a window of 1 minute past to 5 minutes future
 //  if (Math.floor(alertTime / 60000) === Math.floor(now / 60000)) {
 
 //         console.log(`Task "${task.title}" is due for notification!`);
@@ -137,7 +130,6 @@
 //   }
 // }
 
-// // API endpoint for testing notifications
 // app.post('/api/send-notification', async (req, res) => {
 //   const { token, payload } = req.body;
 //   try {
@@ -153,13 +145,11 @@
 //   }
 // });
 
-// // Schedule checks every minute
 // cron.schedule('* * * * *', () => {
 //   console.log('Running scheduled notification check...');
 //   checkAndSendNotifications();
 // });
 
-// // Initial run
 // checkAndSendNotifications();
 
 // app.listen(3000, () => {
@@ -189,7 +179,6 @@ const serviceAccount = {
   universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN,
 };
 
-// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -198,101 +187,21 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Notification message formats
-const formats = [
-  `Your task “{title}” is due soon. Be the hero you need!`,
-  `“{title}” needs your magic touch. Wand ready?`,
-  `Don’t make “{title}” cry. It just wants attention.`,
-  `Task time: “{title}”. Destiny awaits. 🌟`,
-  `📝 “{title}” isn’t going to do itself (unfortunately).`,
-  `“{title}” is lurking. Finish it before it finishes you.`,
-  `⏰ Ping! Time to tackle “{title}” like a boss.`,
-  `🚀 “{title}” is your launchpad to productivity.`,
-  `Just in case you forgot, “{title}” exists. 😉`,
-  `Knock knock. “{title}” is at the door.`,
-  `“{title}” says: Do me, maybe?`,
-  `Finish “{title}” and unlock nap mode. 💤`,
-  `You promised to do “{title}”... remember?`,
-  `“{title}” – now or never (but preferably now).`,
-  `Get your stuff together. “{title}” needs love.`,
-  `🧠 Brain check: Have you done “{title}”?`,
-  `“{title}” is silently judging you. 👀`,
-  `🎯 “{title}” = mission accepted?`,
-  `Let’s crush “{title}” and take the crown. 👑`,
-  `If “{title}” were pizza, you’d eat it. Now go do it.`,
-  `💡 Pro tip: Complete “{title}”. Feel powerful.`,
-  `Alert: “{title}” in the wild. Capture it!`,
-  `A wild “{title}” appeared! Use Task Attack!`,
-  `“{title}” is 90% not scary. You got this.`,
-  `🚨 “{title}” alert! This is not a drill.`,
-  `Conquer “{title}” and earn +5 confidence.`,
-  `“{title}” has been waiting politely. Be nice.`,
-  `You’ve avoided “{title}” long enough.`,
-  `👀 Still there? “{title}” is.`,
-  `Rise, warrior. “{title}” calls.`,
-  `Face “{title}” with courage and snacks.`,
-  `“{title}” just sent you a passive-aggressive vibe.`,
-  `Doing “{title}” now = guilt-free later.`,
-  `You + “{title}” = ❤️`,
-  `Only YOU can prevent overdue “{title}”.`,
-  `Good vibes only. And “{title}”.`,
-  `“{title}”: because Future You said thanks.`,
-  `🎬 Action scene: you vs “{title}”. Go.`,
-  `Power up! “{title}” unlocked.`,
-  `Finish “{title}” and impress the time gods.`,
-  `Reminder: “{title}” is still a thing.`,
-  `Make “{title}” disappear like magic.`,
-  `No pressure… but “{title}”.`,
-  `Your quest: “{title}”. Accept?`,
-  `One small task for you, one big win: “{title}”`,
-  `🚴‍♂️ Pedal to the productivity: “{title}”`,
-  `Don’t worry. “{title}” is friendly.`,
-  `⚔️ Your next duel: “{title}”`,
-  `😅 You know what’s coming… “{title}”`,
-  `💭 Thought of the day: Finish “{title}”`,
-  `✨ “{title}” is the way.`,
-];
-
-// Track used formats to avoid repetition
-const usedFormats = new Map();
-
-// Select a unique random format for each task
-function getUniqueFormat(taskId, taskTitle) {
-  const used = usedFormats.get(taskId) || new Set();
-  let remaining = formats.filter((_, i) => !used.has(i));
-
-  // Reset if all formats used
-  if (remaining.length === 0) {
-    used.clear();
-    remaining = [...formats];
-  }
-
-  const index = Math.floor(Math.random() * remaining.length);
-  const selected = remaining[index];
-  const selectedIndex = formats.indexOf(selected);
-  used.add(selectedIndex);
-  usedFormats.set(taskId, used);
-
-  return selected.replace('{title}', taskTitle);
-}
-
-// Add root GET endpoint for Cron-Job.org pings
 app.get('/', (req, res) => {
   res.status(200).send('Server is running');
 });
 
-// Send FCM notification with retry logic
 async function sendPushNotification(token, payload, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const message = {
-        data: {
-          title: payload.title,
-          body: payload.body,
-          taskId: payload.data.taskId,
-        },
-        token,
-      };
+     const message = {
+  data: {
+    title: payload.title,
+    body: payload.body,
+    taskId: payload.data.taskId,
+  },
+  token,
+};
       await admin.messaging().send(message);
       console.log(`Notification sent for task: ${payload.title} (Attempt ${attempt})`);
       return true;
@@ -312,7 +221,6 @@ async function sendPushNotification(token, payload, retries = 3) {
   return false;
 }
 
-// Check and send notifications
 async function checkAndSendNotifications() {
   const now = Date.now();
   console.log(`Checking for tasks to notify at ${new Date(now).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}...`);
@@ -331,6 +239,60 @@ async function checkAndSendNotifications() {
 
     console.log(`Found ${tasksSnapshot.size} tasks that need notifications.`);
 
+    // List of 50 humorous notification message formats
+    const notificationMessages = [
+      `Yo, "${task.title}" is calling your name! Get it done! 😎`,
+      `Hey! "${task.title}" is ready to be crushed. Let's go! 🚀`,
+      `Psst! "${task.title}" is waiting. Don't leave it hanging! 😉`,
+      `Time to shine! Tackle "${task.title}" now! 🌟`,
+      `Uh-oh! "${task.title}" says, 'Do me now, pretty please!' 😜`,
+      `Your mission: Complete "${task.title}". Accept it? 😏`,
+      `"${task.title}" is knocking. Answer the call! 🔔`,
+      `Don't procrastinate! "${task.title}" needs your attention! 😬`,
+      `Be a hero and finish "${task.title}" today! 🦸`,
+      `"${task.title}" is like, 'C'mon, let's do this!' 💪`,
+      `Tick-tock! "${task.title}" is ready for action! ⏰`,
+      `Hey champ, "${task.title}" is up. Knock it out! 🥊`,
+      `"${task.title}" is begging for your focus. Give it some love! ❤️`,
+      `Time to adult! "${task.title}" awaits your greatness! 😃`,
+      `"${task.title}" just winked at you. Wink back by finishing it! 😉`,
+      `Let's roll! "${task.title}" is ready to be checked off! ✅`,
+      `"${task.title}" is tapping its foot. Hurry up! 🏃`,
+      `You got this! Smash "${task.title}" now! 💥`,
+      `"${task.title}" is giving you puppy eyes. Don't ignore it! 🐶`,
+      `Time to be awesome! "${task.title}" is waiting! 😎`,
+      `"${task.title}" says, 'I'm ready when you are!' Let's go! 🚴`,
+      `Don't let "${task.title}" gather dust. Get to it! 🧹`,
+      `"${task.title}" is your VIP task today. Handle it! 🎯`,
+      `Rise and grind! "${task.title}" needs you! ☀️`,
+      `"${task.title}" is whispering, 'Finish me!' Listen up! 👂`,
+      `Time to slay "${task.title}" like a boss! 🗡️`,
+      `"${task.title}" is ready for its close-up. Action! 🎬`,
+      `Hey, "${task.title}" is feeling lonely. Give it some attention! 😢`,
+      `"${task.title}" is your quest today. Accept the challenge! ⚔️`,
+      `No excuses! "${task.title}" is waiting for you! 😤`,
+      `"${task.title}" says, 'Let's make it happen!' Do it! 💥`,
+      `Be a rockstar and tackle "${task.title}" now! 🎸`,
+      `"${task.title}" is cheering for you. Don't let it down! 📣`,
+      `Time to conquer "${task.title}"! You got this! 🏆`,
+      `"${task.title}" is like, 'Yo, let's wrap this up!' 🙌`,
+      `Don't snooze on "${task.title}"! It's go time! ⏰`,
+      `"${task.title}" is ready to be crossed off. Let's do it! ✍️`,
+      `Hey you! "${task.title}" needs your magic touch! ✨`,
+      `"${task.title}" is calling. Pick up and get it done! 📞`,
+      `Time to flex those skills on "${task.title}"! 💪`,
+      `"${task.title}" is your moment to shine. Go for it! 🌟`,
+      `Don't leave "${task.title}" hanging! Finish it! 😜`,
+      `"${task.title}" is ready for you to be its hero! 🦸‍♀️`,
+      `Let's make "${task.title}" history! Get to it! 🗑️`,
+      `"${task.title}" is wagging its tail for you. Act now! 🐕`,
+      `Time to tackle "${task.title}" like a pro! 🏀`,
+      `"${task.title}" is ready for its big moment. Don't miss it! 🎤`,
+      `Hey, "${task.title}" is knocking. Open the door! 🚪`,
+      `"${task.title}" says, 'Let's finish strong!' You in? 💪`,
+      `Be epic and complete "${task.title}" now! ⚡`,
+    ];
+
     const notificationPromises = tasksSnapshot.docs.map(async (doc) => {
       const task = doc.data();
       const taskId = doc.id;
@@ -344,7 +306,8 @@ async function checkAndSendNotifications() {
       console.log(`  Current Time: ${new Date(now).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
       console.log(`  Time Difference (ms): ${now - alertTime}`);
 
-      if (Math.floor(alertTime / 60000) === Math.floor(now / 60000)) {
+ if (Math.floor(alertTime / 60000) === Math.floor(now / 60000)) {
+
         console.log(`Task "${task.title}" is due for notification!`);
 
         const token = task.token;
@@ -354,10 +317,12 @@ async function checkAndSendNotifications() {
           return;
         }
 
-        const body = getUniqueFormat(taskId, task.title);
+        // Randomly select a humorous message from the list
+        const randomMessage = notificationMessages[Math.floor(Math.random() * notificationMessages.length)];
+
         const payload = {
-          title: `⏰ Reminder`,
-          body,
+          title: task.title, // Simplified title
+          body: randomMessage.replace('${task.title}', task.title), // Use random humorous message
           data: { taskId },
         };
 
@@ -380,7 +345,6 @@ async function checkAndSendNotifications() {
   }
 }
 
-// API endpoint for testing notifications
 app.post('/api/send-notification', async (req, res) => {
   const { token, payload } = req.body;
   try {
@@ -396,13 +360,11 @@ app.post('/api/send-notification', async (req, res) => {
   }
 });
 
-// Schedule checks every minute
 cron.schedule('* * * * *', () => {
   console.log('Running scheduled notification check...');
   checkAndSendNotifications();
 });
 
-// Initial run
 checkAndSendNotifications();
 
 app.listen(3000, () => {
