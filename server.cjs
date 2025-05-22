@@ -39,14 +39,14 @@ app.get('/', (req, res) => {
 async function sendPushNotification(token, payload, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const message = {
-        notification: {
-          title: payload.title,
-          body: payload.body,
-        },
-        data: payload.data,
-        token,
-      };
+     const message = {
+  data: {
+    title: payload.title,
+    body: payload.body,
+    taskId: payload.data.taskId,
+  },
+  token,
+};
       await admin.messaging().send(message);
       console.log(`Notification sent for task: ${payload.title} (Attempt ${attempt})`);
       return true;
@@ -101,7 +101,8 @@ async function checkAndSendNotifications() {
       console.log(`  Time Difference (ms): ${now - alertTime}`);
 
       // Check if current time is within a window of 1 minute past to 5 minutes future
-      if (alertTime >= now - 60 * 1000 && alertTime <= now + 5 * 60 * 1000) {
+ if (Math.floor(alertTime / 60000) === Math.floor(now / 60000)) {
+
         console.log(`Task "${task.title}" is due for notification!`);
 
         const token = task.token;
